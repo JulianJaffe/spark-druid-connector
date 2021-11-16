@@ -15,8 +15,8 @@
 
 package com.julianjaffe.spark_druid_connector.utils
 
-import org.apache.druid.query.filter.{AndDimFilter, BoundDimFilter, DimFilter, FalseDimFilter,
-  InDimFilter, NotDimFilter, RegexDimFilter, SelectorDimFilter}
+import org.apache.druid.query.filter.{AndDimFilter, BoundDimFilter, DimFilter, InDimFilter,
+  NotDimFilter, RegexDimFilter, SelectorDimFilter}
 import org.apache.druid.query.ordering.StringComparators
 import org.apache.spark.sql.sources.{And, EqualNullSafe, EqualTo, GreaterThan, GreaterThanOrEqual,
   In, IsNotNull, IsNull, LessThan, LessThanOrEqual, Not, Or, StringContains, StringEndsWith,
@@ -168,16 +168,6 @@ class FilterUtilsSuite extends AnyFunSuite with Matchers {
     expected should equal(druidFilter)
   }
 
-  test("mapFilters should correctly map a Spark In filter with only null into a short-circuit filter") {
-    NullHandlingUtils.initializeDruidNullHandling(false)
-
-    val druidFilter = FilterUtils.mapFilters(
-      Array[SparkFilter](In("name", Array(null))), testSchema // scalastyle:ignore null
-    ).get
-
-    FalseDimFilter.instance() should equal(druidFilter)
-  }
-
   test("mapFilters should correctly map a Spark EqualNullSafe null filter into an equivalent Druid filter") {
     NullHandlingUtils.initializeDruidNullHandling(false)
 
@@ -188,19 +178,9 @@ class FilterUtilsSuite extends AnyFunSuite with Matchers {
 
     // scalastyle:off null
     val expected = new SelectorDimFilter("name", null, null, null)
-    // scalastyle:on null
+    // scalastyle:on
 
     expected should equal(druidFilter)
-  }
-
-  test("mapFilters should correctly map a Spark EqualTo null filter into a short-circuit filter") {
-    NullHandlingUtils.initializeDruidNullHandling(false)
-
-    val druidFilter = FilterUtils.mapFilters(
-      Array[SparkFilter](EqualTo("name", null)), testSchema // scalastyle:ignore null
-    ).get
-
-    FalseDimFilter.instance() should equal(druidFilter)
   }
 
   test("isSupportedFilter should correctly identify supported and unsupported filters") {
@@ -244,13 +224,13 @@ class FilterUtilsSuite extends AnyFunSuite with Matchers {
     FilterUtils.isSupportedFilter(IsNotNull("count"), testSchema, true) shouldBe true
   }
 
-  test("isSupportedFilter should correctly identify In, EqualNullSafe, and EqualTo filters on null as " +
-    "supported when using SQL-compatible null handling") {
+  test("isSupportedFilter should correctly identify certain In, EqualNullSafe, and EqualTo filters on null " +
+    "as supported when using SQL-compatible null handling") {
     // scalastyle:off null
     FilterUtils.isSupportedFilter(In("name", Array[Any]("a", "b", null)), testSchema, true) shouldBe true
-    FilterUtils.isSupportedFilter(In("name", Array[Any](null)), testSchema, true) shouldBe true
+    FilterUtils.isSupportedFilter(In("name", Array[Any](null)), testSchema, true) shouldBe false
     FilterUtils.isSupportedFilter(EqualNullSafe("name", null), testSchema, true) shouldBe true
-    FilterUtils.isSupportedFilter(EqualTo("name", null), testSchema, true) shouldBe true
+    FilterUtils.isSupportedFilter(EqualTo("name", null), testSchema, true) shouldBe false
     // scalastyle:on
   }
 

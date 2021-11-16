@@ -19,7 +19,6 @@ import org.apache.druid.data.input.InputRow
 import org.apache.druid.data.input.impl.{DimensionSchema, DoubleDimensionSchema,
   FloatDimensionSchema, LongDimensionSchema, StringDimensionSchema}
 import org.apache.druid.java.util.common.IAE
-import org.apache.druid.segment.column.{RowSignature, ValueType}
 import com.julianjaffe.spark_druid_connector.registries.ComplexMetricRegistry
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.util.ArrayData
@@ -242,38 +241,5 @@ object SchemaUtils {
     }
     // For now, the return type could just be Unit, but leaving the stubs in place for future improvement
     true
-  }
-
-  /**
-    * Given a Spark schema, construct an equivalent Druid RowSignature.
-    *
-    * @param schema The Spark schema to generate a RowSignature from.
-    * @return A RowSignature corresponding to SCHEMA.
-    */
-  def generateRowSignatureFromSparkSchema(schema: StructType): RowSignature = {
-    val builder = RowSignature.builder()
-    schema.foreach{field =>
-      builder.add(field.name, getDruidValueTypeForDataType(field.dataType))
-    }
-    builder.build()
-  }
-
-  /**
-    * Return the Druid ValueType corresponding to a provided Spark DataType.
-    *
-    * @param dtype The Spark DataType
-    * @return The ValueType corresponding to DTYPE.
-    */
-  def getDruidValueTypeForDataType(dtype: DataType): ValueType = {
-    dtype match {
-      case DoubleType => ValueType.DOUBLE
-      case FloatType => ValueType.FLOAT
-      case LongType => ValueType.LONG
-      case StringType => ValueType.STRING
-      case ArrayType(DoubleType, _) => ValueType.DOUBLE_ARRAY
-      case ArrayType(LongType, _) => ValueType.LONG_ARRAY
-      case ArrayType(StringType, _) => ValueType.STRING_ARRAY
-      case _ => ValueType.COMPLEX
-    }
   }
 }

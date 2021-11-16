@@ -19,8 +19,8 @@ import com.fasterxml.jackson.databind.introspect.AnnotatedClassResolver
 import com.julianjaffe.spark_druid_connector.mixins.Logging
 import com.julianjaffe.spark_druid_connector.MAPPER
 import org.apache.druid.java.util.common.IAE
-import org.apache.druid.timeline.partition.{HashBasedNumberedShardSpec, HashPartitionFunction,
-  LinearShardSpec, NumberedShardSpec, ShardSpec, SingleDimensionShardSpec}
+import org.apache.druid.timeline.partition.{HashBasedNumberedShardSpec, LinearShardSpec,
+  NumberedShardSpec, ShardSpec, SingleDimensionShardSpec}
 
 import scala.collection.JavaConverters.{collectionAsScalaIterableConverter, seqAsJavaListConverter}
 import scala.collection.mutable
@@ -128,21 +128,14 @@ object ShardSpecRegistry extends Logging {
         new HashBasedNumberedShardSpec(
           properties("partitionId").toInt,
           properties.get("numPartitions").map(_.toInt).getOrElse(1),
-          properties.get("bucketId").map(Integer.decode).orNull,
-          properties.get("numBuckets").map(Integer.decode).orNull,
           properties.get("partitionDimensions").map(_.split(",").toList.asJava).orNull,
-          properties.get("hashPartitionFunction").map(HashPartitionFunction.fromString)
-            .getOrElse(HashPartitionFunction.MURMUR3_32_ABS),
           MAPPER),
         (baseSpec: ShardSpec, partitionNum: Int, numPartitions: Int) => {
           val spec = baseSpec.asInstanceOf[HashBasedNumberedShardSpec]
           new HashBasedNumberedShardSpec(
             partitionNum,
             numPartitions,
-            spec.getBucketId,
-            spec.getNumBuckets,
             spec.getPartitionDimensions,
-            spec.getPartitionFunction,
             MAPPER
           )
         }
@@ -163,14 +156,12 @@ object ShardSpecRegistry extends Logging {
           properties("dimension"),
           properties.get("start").orNull,
           properties.get("end").orNull,
-          properties("partitionId").toInt,
-          // Explicitly constructing an Integer since Scala options and auto-boxing don't play nicely
-          new Integer(properties.get("numPartitions").map(_.toInt).getOrElse(-1))
+          properties("partitionId").toInt
         ),
         (baseSpec: ShardSpec, partitionNum: Int, numPartitions: Int) => {
           val spec = baseSpec.asInstanceOf[SingleDimensionShardSpec]
           new SingleDimensionShardSpec(
-            spec.getDimension, spec.getStart, spec.getEnd, partitionNum, numPartitions
+            spec.getDimension, spec.getStart, spec.getEnd, partitionNum
           )
         }
       )

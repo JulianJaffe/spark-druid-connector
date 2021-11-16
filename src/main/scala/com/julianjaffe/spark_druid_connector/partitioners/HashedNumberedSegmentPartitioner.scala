@@ -16,8 +16,7 @@
 package com.julianjaffe.spark_druid_connector.partitioners
 
 import com.julianjaffe.spark_druid_connector.MAPPER
-import org.apache.druid.timeline.partition.{HashBasedNumberedShardSpec, HashPartitionFunction,
-  ShardSpec, ShardSpecLookup}
+import org.apache.druid.timeline.partition.{HashBasedNumberedShardSpec, ShardSpec, ShardSpecLookup}
 import org.apache.druid.data.input.MapBasedInputRow
 import org.apache.druid.java.util.common.{DateTimes, IAE, ISE}
 import org.apache.druid.java.util.common.granularity.Granularity
@@ -42,14 +41,11 @@ import scala.collection.JavaConverters.{collectionAsScalaIterableConverter, mapA
   *                Spark partition id. See HashedNumberedSegmentPartitioner#getSizedPartitionMap
   * @param partitionDims The set of dimensions to hash using PARTITIONFUNCTION. If this is not specified,
   *                      all dimension plus the bucket time will be used
-  * @param partitionFunction The function to use to hash PARTITIONDIMS. Defaults to MURMUR3_32_ABS.
-  *                          See HashPartitionFunction for more details.
   */
 class HashedNumberedSegmentPartitioner(
                              granularityStr: String,
                              partMap: Map[(Long, Long), Int],
-                             partitionDims: Option[Set[String]] = None,
-                             partitionFunction: HashPartitionFunction = HashPartitionFunction.MURMUR3_32_ABS
+                             partitionDims: Option[Set[String]] = None
                            ) extends Partitioner with PartitionMapProvider {
   private lazy val granularity: Granularity = Granularity.fromString(granularityStr)
   private lazy val partitionDimensions: JList[String] = partitionDims.map(_.toList.asJava).orNull
@@ -62,10 +58,7 @@ class HashedNumberedSegmentPartitioner(
           partitionId => new HashBasedNumberedShardSpec(
             partitionId,
             maxPartitions,
-            null, // scalastyle:ignore null
-            null, // scalastyle:ignore null
             partitionDimensions,
-            partitionFunction,
             MAPPER
           ).asInstanceOf[ShardSpec])
         shardSpecs.head.getLookup(shardSpecs.asJava)
@@ -109,10 +102,7 @@ class HashedNumberedSegmentPartitioner(
         val properties = Map[String, String](
           "partitionId" -> druidPartitionId.toString,
           "numPartitions" -> numPartitions.toString,
-          "bucketId" -> druidPartitionId.toString,
-          "numBuckets" -> numPartitions.toString,
-          "partitionDimensions" -> partitionDimensions.asScala.mkString(","),
-          "hashPartitionFunction" -> partitionFunction.toString
+          "partitionDimensions" -> partitionDimensions.asScala.mkString(",")
         )
         sparkPartitionId -> properties
     }

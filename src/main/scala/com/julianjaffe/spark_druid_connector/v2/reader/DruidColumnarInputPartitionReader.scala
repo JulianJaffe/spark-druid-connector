@@ -57,7 +57,7 @@ class DruidColumnarInputPartitionReader(
   private val adapter = new QueryableIndexStorageAdapter(queryableIndex)
 
   private val cursor: VectorCursor = adapter.makeVectorCursor(
-    filter.map(_.toOptimizedFilter).orNull,
+    filter.map(_.optimize().toFilter).orNull,
     adapter.getInterval,
     VirtualColumns.EMPTY,
     false,
@@ -121,7 +121,8 @@ class DruidColumnarInputPartitionReader(
           case ValueType.FLOAT | ValueType.LONG | ValueType.DOUBLE =>
             fillNumericVector(capabilities.getType, selectorFactory, columnVector, col.name)
           case ValueType.STRING =>
-            fillStringVector(selectorFactory, columnVector, col, capabilities.hasMultipleValues.isMaybeTrue)
+            val hasMultipleValues = capabilities == null || !capabilities.isComplete || capabilities.hasMultipleValues
+            fillStringVector(selectorFactory, columnVector, col, hasMultipleValues)
           case ValueType.COMPLEX =>
             fillComplexVector(selectorFactory, columnVector, col)
           case _ => throw new IAE(s"Unrecognized ValueType ${capabilities.getType}!")

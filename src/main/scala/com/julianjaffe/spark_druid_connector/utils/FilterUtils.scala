@@ -16,8 +16,8 @@
 package com.julianjaffe.spark_druid_connector.utils
 
 import org.apache.druid.java.util.common.{ISE, JodaUtils}
-import org.apache.druid.query.filter.{AndDimFilter, BoundDimFilter, DimFilter, FalseDimFilter,
-  InDimFilter, NotDimFilter, OrDimFilter, RegexDimFilter, SelectorDimFilter}
+import org.apache.druid.query.filter.{AndDimFilter, BoundDimFilter, DimFilter, InDimFilter,
+  NotDimFilter, OrDimFilter, RegexDimFilter, SelectorDimFilter}
 import org.apache.druid.query.ordering.{StringComparator, StringComparators}
 import org.apache.spark.sql.sources.{And, EqualNullSafe, EqualTo, Filter, GreaterThan,
   GreaterThanOrEqual, In, IsNotNull, IsNull, LessThan, LessThanOrEqual, Not, Or, StringContains,
@@ -83,12 +83,7 @@ object FilterUtils {
         // Not sure the trade-offs between LikeDimFilter and RegexDimFilter here
         // new LikeDimFilter(field, s"%$value", null, null, null)
         new RegexDimFilter(field, s"$value$$", null, null)
-      case EqualTo(field, value) =>
-        if (value == null) {
-          FalseDimFilter.instance()
-        } else {
-          new SelectorDimFilter(field, value.toString, null, null)
-        }
+      case EqualTo(field, value) => new SelectorDimFilter(field, value.toString, null, null)
       case EqualNullSafe(field, value) =>
         new SelectorDimFilter(field, Option(value).map(_.toString).orNull, null, null)
       case LessThan(field, value) =>
@@ -184,13 +179,11 @@ object FilterUtils {
         case _: IsNull => useSQLCompatibleNulls
         case _: IsNotNull => useSQLCompatibleNulls
         case in: In => checkAllDataTypesSupported(filter, schema) &&
-          (useSQLCompatibleNulls || !in.values.contains(null))
+          !(in.values.contains(null) && in.values.length == 1)
         case _: StringContains => checkStringsOnly(filter, schema)
         case _: StringStartsWith => checkStringsOnly(filter, schema)
         case _: StringEndsWith => checkStringsOnly(filter, schema)
-        // Hopefully Spark is smart enough to short-circuit for foo = NULL queries but if not, I guess we can
-        case equalTo: EqualTo => checkAllDataTypesSupported(filter, schema) &&
-          (useSQLCompatibleNulls || equalTo.value != null)
+        case equalTo: EqualTo => checkAllDataTypesSupported(filter, schema) && equalTo.value != null
         case equalNullSafe: EqualNullSafe => checkAllDataTypesSupported(filter, schema) &&
           (useSQLCompatibleNulls || equalNullSafe.value != null)
         case _: LessThan => checkAllDataTypesSupported(filter, schema)
