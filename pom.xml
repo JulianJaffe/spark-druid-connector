@@ -21,7 +21,7 @@
 
     <groupId>com.julianjaffe.spark-druid-connector</groupId>
     <artifactId>spark-druid-connector</artifactId>
-    <version>1.1-SNAPSHOT</version>
+    <version>1.0</version>
     <description>Spark connectors for reading data from and writing data to Druid clusters</description>
 
     <licenses>
