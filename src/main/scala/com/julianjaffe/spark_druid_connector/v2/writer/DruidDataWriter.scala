@@ -30,8 +30,7 @@ import org.apache.druid.java.util.common.{DateTimes, FileUtils, Intervals}
 import org.apache.druid.segment.column.ValueType
 import org.apache.druid.segment.data.{BitmapSerdeFactory, CompressionFactory, CompressionStrategy,
   ConciseBitmapSerdeFactory, RoaringBitmapSerdeFactory}
-import org.apache.druid.segment.incremental.{IncrementalIndex, IncrementalIndexSchema,
-  OnheapIncrementalIndex}
+import org.apache.druid.segment.incremental.{IncrementalIndex, IncrementalIndexSchema}
 import org.apache.druid.segment.indexing.DataSchema
 import org.apache.druid.segment.loading.DataSegmentPusher
 import org.apache.druid.segment.writeout.OnHeapMemorySegmentWriteOutMediumFactory
@@ -176,9 +175,7 @@ class DruidDataWriter(config: DruidDataWriterConfig) extends DataWriter[Internal
   }
 
   private[v2] def createInterval(startMillis: Long): IncrementalIndex[_] = {
-    // Using OnHeapIncrementalIndex to minimize changes when migrating from IncrementalIndex. In the future, this should
-    // be optimized further. See https://github.com/apache/druid/issues/10321 for more information.
-    new OnheapIncrementalIndex.Builder()
+    new IncrementalIndex.Builder()
       .setIndexSchema(
         new IncrementalIndexSchema.Builder()
           .withDimensionsSpec(dataSchema.getDimensionsSpec)
@@ -192,7 +189,7 @@ class DruidDataWriter(config: DruidDataWriterConfig) extends DataWriter[Internal
           .build()
       )
       .setMaxRowCount(config.rowsPerPersist)
-      .build()
+      .buildOnheap()
   }
 
   private[v2] def flushIndex(index: IncrementalIndex[_]): IndexableAdapter = {
@@ -232,8 +229,7 @@ class DruidDataWriter(config: DruidDataWriterConfig) extends DataWriter[Internal
           true,
           dataSchema.getAggregators,
           tmpMergeDir,
-          indexSpec,
-          -1 // TODO: Make maxColumnsToMerge configurable
+          indexSpec
         )
         val allDimensions: JList[String] = adapters
           .map(_.getDimensionNames)

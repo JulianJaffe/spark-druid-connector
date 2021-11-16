@@ -18,21 +18,21 @@ package com.julianjaffe.spark_druid_connector.registries
 import com.fasterxml.jackson.databind.jsontype.NamedType
 import com.julianjaffe.spark_druid_connector.MAPPER
 import com.julianjaffe.spark_druid_connector.mixins.Logging
-import org.apache.druid.metadata.DynamicConfigProvider
+import org.apache.druid.metadata.PasswordProvider
 
 /**
-  * A registry for dynamic config providers. Similarly to the {@link AggregatorFactoryRegistry}, we can shadow the usual
+  * A registry for password providers. Similarly to the {@link AggregatorFactoryRegistry}, we can shadow the usual
   * Druid pattern and let Jackson handle the polymorphism for our current use cases.
   */
-object DynamicConfigProviderRegistry extends Logging {
+object PasswordProviderRegistry extends Logging {
   /**
-    * Register a dynamic config provider with the given name. NAME must match the Jackson sub-type for PROVIDER.
+    * Register a password provider with the given name. NAME must match the Jackson sub-type for PROVIDER.
     *
     * @param name The Jackson subtype for PROVIDER
-    * @param provider An implementation of DynamicConfigProvider to use when deserializing sensitive config values.
+    * @param provider An implementation of PasswordProvider to use when deserializing sensitive config values.
     */
-  def register(name: String, provider: DynamicConfigProvider[_]): Unit = {
-    logInfo(s"Registering DynamicConfigProvider $name.")
+  def register(name: String, provider: PasswordProvider): Unit = {
+    logInfo(s"Registering PasswordProvider $name.")
     // Cheat
     MAPPER.registerSubtypes(new NamedType(provider.getClass, name))
   }
