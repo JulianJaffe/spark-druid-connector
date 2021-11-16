@@ -15,7 +15,7 @@
 
 package com.julianjaffe.spark_druid_connector.model
 
-import org.apache.druid.metadata.DynamicConfigProvider
+import org.apache.druid.metadata.PasswordProvider
 import com.julianjaffe.spark_druid_connector.configuration.{Configuration, DruidConfigurationKeys}
 
 import scala.collection.mutable
@@ -32,10 +32,10 @@ class AzureDeepStorageConfig extends DeepStorageConfig(DruidConfigurationKeys.az
     this
   }
 
-  def key(keyProvider: DynamicConfigProvider[String], confKey: String): AzureDeepStorageConfig = {
+  def key(keyProvider: PasswordProvider): AzureDeepStorageConfig = {
     val key = Configuration.toKey(DruidConfigurationKeys.azureDeepStorageTypeKey,
       DruidConfigurationKeys.azureKeyKey)
-    optionsMap.put(key, keyProvider.getConfig.getOrDefault(confKey, ""))
+    optionsMap.put(key, keyProvider.getPassword)
     this
   }
 

@@ -67,11 +67,11 @@ class HashBasedNumberedPartitionerSuite extends SparkFunSuite with Matchers with
     )
 
     val expectedPartitionMap = Seq[Map[String, String]](
-      Map("bucketId" -> "0", "hashPartitionFunction" -> "murmur3_32_abs", "partitionId" -> "0", "numBuckets" -> "2",
+      Map("bucketId" -> "0", "partitionId" -> "0", "numBuckets" -> "2",
         "numPartitions" -> "2"),
-      Map("bucketId" -> "1", "hashPartitionFunction" -> "murmur3_32_abs", "partitionId" -> "1", "numBuckets" -> "2",
+      Map("bucketId" -> "1", "partitionId" -> "1", "numBuckets" -> "2",
         "numPartitions" -> "2"),
-      Map("bucketId" -> "0", "hashPartitionFunction" -> "murmur3_32_abs", "partitionId" -> "0", "numBuckets" -> "1",
+      Map("bucketId" -> "0", "partitionId" -> "0", "numBuckets" -> "1",
         "numPartitions" -> "1")
     )
 
@@ -122,11 +122,11 @@ class HashBasedNumberedPartitionerSuite extends SparkFunSuite with Matchers with
     )
 
     val expectedPartitionMap = Seq[Map[String, String]](
-      Map("bucketId" -> "0", "hashPartitionFunction" -> "murmur3_32_abs", "partitionId" -> "0", "numBuckets" -> "2",
+      Map("bucketId" -> "0", "partitionId" -> "0", "numBuckets" -> "2",
         "partitionDimension" -> "dim2", "numPartitions" -> "2"),
-      Map("bucketId" -> "1", "hashPartitionFunction" -> "murmur3_32_abs", "partitionId" -> "1", "numBuckets" -> "2",
+      Map("bucketId" -> "1", "partitionId" -> "1", "numBuckets" -> "2",
         "partitionDimension" -> "dim2", "numPartitions" -> "2"),
-      Map("bucketId" -> "0", "hashPartitionFunction" -> "murmur3_32_abs", "partitionId" -> "0", "numBuckets" -> "1",
+      Map("bucketId" -> "0", "partitionId" -> "0", "numBuckets" -> "1",
         "partitionDimension" -> "dim2", "numPartitions" -> "1")
     )
 
@@ -175,9 +175,9 @@ class HashBasedNumberedPartitionerSuite extends SparkFunSuite with Matchers with
     )
 
     val expectedPartitionMap = Seq[Map[String, String]](
-      Map("bucketId" -> "0", "hashPartitionFunction" -> "murmur3_32_abs", "partitionId" -> "0", "numBuckets" -> "1",
+      Map("bucketId" -> "0", "partitionId" -> "0", "numBuckets" -> "1",
         "partitionDimension" -> "dim2,id1", "numPartitions" -> "1"),
-      Map("bucketId" -> "0", "hashPartitionFunction" -> "murmur3_32_abs", "partitionId" -> "0", "numBuckets" -> "1",
+      Map("bucketId" -> "0", "partitionId" -> "0", "numBuckets" -> "1",
         "partitionDimension" -> "dim2,id1", "numPartitions" -> "1")
     )
 
@@ -232,11 +232,11 @@ class HashBasedNumberedPartitionerSuite extends SparkFunSuite with Matchers with
     )
 
     val expectedPartitionMap = Seq[Map[String, String]](
-      Map("bucketId" -> "0", "hashPartitionFunction" -> "murmur3_32_abs", "partitionId" -> "0", "numBuckets" -> "4",
+      Map("bucketId" -> "0", "partitionId" -> "0", "numBuckets" -> "4",
         "numPartitions" -> "2"),
-      Map("bucketId" -> "1", "hashPartitionFunction" -> "murmur3_32_abs", "partitionId" -> "1", "numBuckets" -> "4",
+      Map("bucketId" -> "1", "partitionId" -> "1", "numBuckets" -> "4",
         "numPartitions" -> "2"),
-      Map("bucketId" -> "1", "hashPartitionFunction" -> "murmur3_32_abs", "partitionId" -> "0", "numBuckets" -> "2",
+      Map("bucketId" -> "1", "partitionId" -> "0", "numBuckets" -> "2",
         "numPartitions" -> "1")
     )
 

@@ -27,7 +27,7 @@ import org.apache.druid.data.input.impl.DimensionSchema
 import org.apache.druid.jackson.DefaultObjectMapper
 import org.apache.druid.java.util.common.granularity.GranularityType
 import org.apache.druid.math.expr.ExprMacroTable
-import org.apache.druid.metadata.DynamicConfigProvider
+import org.apache.druid.metadata.PasswordProvider
 import org.apache.druid.query.aggregation.AggregatorFactory
 import org.apache.druid.query.expression.{LikeExprMacro, RegexpExtractExprMacro,
   TimestampCeilExprMacro, TimestampExtractExprMacro, TimestampFloorExprMacro,
@@ -36,7 +36,6 @@ import org.apache.druid.segment.data.RoaringBitmapSerdeFactory
 import org.apache.druid.segment.IndexSpec
 import org.apache.druid.timeline.DataSegment
 import org.apache.druid.timeline.DataSegment.PruneSpecsHolder
-import org.apache.druid.timeline.partition.HashPartitionFunction
 import org.apache.spark.sql.{DataFrame, DataFrameReader, DataFrameWriter, Row}
 
 import java.util.Properties
@@ -180,9 +179,8 @@ package object spark_druid_connector { // scalastyle:ignore package.object.name
       writer.option(metadataPrefix(DruidConfigurationKeys.metadataHostKey), host)
     }
 
-    def metadataPassword(provider: DynamicConfigProvider[String], confKey: String): DataFrameWriter[T] = {
-      writer.option(metadataPrefix(DruidConfigurationKeys.metadataPasswordKey),
-        provider.getConfig.getOrDefault(confKey, ""))
+    def metadataPassword(provider: PasswordProvider): DataFrameWriter[T] = {
+      writer.option(metadataPrefix(DruidConfigurationKeys.metadataPasswordKey), provider.getPassword)
     }
 
     def metadataPassword(password: String): DataFrameWriter[T] = {
@@ -334,9 +332,8 @@ package object spark_druid_connector { // scalastyle:ignore package.object.name
       reader.option(metadataPrefix(DruidConfigurationKeys.metadataHostKey), host)
     }
 
-    def metadataPassword(provider: DynamicConfigProvider[String], confKey: String): DataFrameReader = {
-      reader.option(metadataPrefix(DruidConfigurationKeys.metadataPasswordKey),
-        provider.getConfig.getOrDefault(confKey, ""))
+    def metadataPassword(provider: PasswordProvider): DataFrameReader = {
+      reader.option(metadataPrefix(DruidConfigurationKeys.metadataPasswordKey), provider.getPassword)
     }
 
     def metadataPassword(password: String): DataFrameReader = {
@@ -420,13 +417,12 @@ package object spark_druid_connector { // scalastyle:ignore package.object.name
                                segmentGranularity: String,
                                rowsPerPartition: Long,
                                partitionColsOpt: Option[Seq[String]],
-                               shouldRollUp: Boolean = true,
-                               hashFunc: HashPartitionFunction = HashPartitionFunction.MURMUR3_32_ABS
+                               shouldRollUp: Boolean = true
                              ): DataFrameWriter[Row] = {
 
       val partitioner = new HashBasedNumberedPartitioner(df)
       val partitionedDf = partitioner.partition(
-        tsCol, tsFormat, segmentGranularity, rowsPerPartition, partitionColsOpt, shouldRollUp, hashFunc
+        tsCol, tsFormat, segmentGranularity, rowsPerPartition, partitionColsOpt, shouldRollUp
       )
 
       partitionedDf

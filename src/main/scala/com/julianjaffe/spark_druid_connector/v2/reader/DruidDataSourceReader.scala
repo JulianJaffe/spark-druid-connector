@@ -218,8 +218,7 @@ class DruidDataSourceReader(
       }
       val filterOpt = FilterUtils.mapFilters(filters, schema.get)
       filterOpt.fold(true) { filter =>
-        val rowSignature = SchemaUtils.generateRowSignatureFromSparkSchema(schema.get)
-        val canVectorize = filter.toOptimizedFilter.canVectorizeMatcher(rowSignature)
+        val canVectorize = filter.toOptimizedFilter.canVectorizeMatcher
         if (!canVectorize) {
           logWarn("Vectorization enabled in config but pushed-down filters are not vectorizable! Reading rows.")
         }

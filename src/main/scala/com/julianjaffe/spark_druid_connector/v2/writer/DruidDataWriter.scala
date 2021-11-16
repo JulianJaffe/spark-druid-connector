@@ -17,12 +17,14 @@ package com.julianjaffe.spark_druid_connector.v2.writer
 
 import com.fasterxml.jackson.core.`type`.TypeReference
 import com.julianjaffe.spark_druid_connector.MAPPER
-import com.julianjaffe.spark_druid_connector.configuration.{DruidConfigurationKeys, DruidDataWriterConfig}
+import com.julianjaffe.spark_druid_connector.configuration.{DruidConfigurationKeys,
+  DruidDataWriterConfig}
 import com.julianjaffe.spark_druid_connector.mixins.Logging
-import com.julianjaffe.spark_druid_connector.registries.{ComplexMetricRegistry, SegmentWriterRegistry,
-  ShardSpecRegistry}
+import com.julianjaffe.spark_druid_connector.registries.{ComplexMetricRegistry,
+  SegmentWriterRegistry, ShardSpecRegistry}
 import com.julianjaffe.spark_druid_connector.utils.NullHandlingUtils
 import com.julianjaffe.spark_druid_connector.v2.{INDEX_IO, INDEX_MERGER_V9}
+import org.apache.druid.common.guava.GuavaUtils
 import org.apache.druid.data.input.MapBasedInputRow
 import org.apache.druid.java.util.common.io.Closer
 import org.apache.druid.java.util.common.parsers.TimestampParser
@@ -30,8 +32,7 @@ import org.apache.druid.java.util.common.{DateTimes, FileUtils, Intervals}
 import org.apache.druid.segment.column.ValueType
 import org.apache.druid.segment.data.{BitmapSerdeFactory, CompressionFactory, CompressionStrategy,
   ConciseBitmapSerdeFactory, RoaringBitmapSerdeFactory}
-import org.apache.druid.segment.incremental.{IncrementalIndex, IncrementalIndexSchema,
-  OnheapIncrementalIndex}
+import org.apache.druid.segment.incremental.{IncrementalIndex, IncrementalIndexSchema}
 import org.apache.druid.segment.indexing.DataSchema
 import org.apache.druid.segment.loading.DataSegmentPusher
 import org.apache.druid.segment.writeout.OnHeapMemorySegmentWriteOutMediumFactory
@@ -116,7 +117,12 @@ class DruidDataWriter(config: DruidDataWriterConfig) extends DataWriter[Internal
   )
 
   private val complexColumnTypes = {
-    dataSchema.getAggregators.toSeq.filter(_.getType == ValueType.COMPLEX).map(_.getComplexTypeName)
+    dataSchema.getAggregators.toSeq
+      .filter{ aggregator =>
+        Option(GuavaUtils.getEnumIfPresent(classOf[ValueType], aggregator.getTypeName))
+          .getOrElse(ValueType.COMPLEX) == ValueType.COMPLEX
+      }
+      .map(_.getTypeName)
   }
 
   if (complexColumnTypes.nonEmpty) {
@@ -176,9 +182,7 @@ class DruidDataWriter(config: DruidDataWriterConfig) extends DataWriter[Internal
   }
 
   private[v2] def createInterval(startMillis: Long): IncrementalIndex[_] = {
-    // Using OnHeapIncrementalIndex to minimize changes when migrating from IncrementalIndex. In the future, this should
-    // be optimized further. See https://github.com/apache/druid/issues/10321 for more information.
-    new OnheapIncrementalIndex.Builder()
+    new IncrementalIndex.Builder()
       .setIndexSchema(
         new IncrementalIndexSchema.Builder()
           .withDimensionsSpec(dataSchema.getDimensionsSpec)
@@ -192,7 +196,7 @@ class DruidDataWriter(config: DruidDataWriterConfig) extends DataWriter[Internal
           .build()
       )
       .setMaxRowCount(config.rowsPerPersist)
-      .build()
+      .buildOnheap()
   }
 
   private[v2] def flushIndex(index: IncrementalIndex[_]): IndexableAdapter = {
@@ -232,8 +236,7 @@ class DruidDataWriter(config: DruidDataWriterConfig) extends DataWriter[Internal
           true,
           dataSchema.getAggregators,
           tmpMergeDir,
-          indexSpec,
-          -1 // TODO: Make maxColumnsToMerge configurable
+          indexSpec
         )
         val allDimensions: JList[String] = adapters
           .map(_.getDimensionNames)

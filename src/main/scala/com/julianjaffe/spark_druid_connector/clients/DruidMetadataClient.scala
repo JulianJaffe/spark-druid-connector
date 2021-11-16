@@ -23,8 +23,8 @@ import com.julianjaffe.spark_druid_connector.mixins.Logging
 import com.julianjaffe.spark_druid_connector.registries.SQLConnectorRegistry
 import org.apache.druid.indexer.SQLMetadataStorageUpdaterJobHandler
 import org.apache.druid.java.util.common.{DateTimes, Intervals, JodaUtils, StringUtils}
-import org.apache.druid.metadata.{DynamicConfigProvider, MetadataStorageConnectorConfig,
-  MetadataStorageTablesConfig, SQLMetadataConnector}
+import org.apache.druid.metadata.{MetadataStorageConnectorConfig, MetadataStorageTablesConfig,
+  PasswordProvider, SQLMetadataConnector}
 import org.apache.druid.timeline.{DataSegment, Partitions, VersionedIntervalTimeline}
 import org.skife.jdbi.v2.{DBI, Handle}
 
@@ -48,9 +48,9 @@ class DruidMetadataClient(
     // Jackson doesn't like deserializing empty strings
     passwordProviderSer
   } else {
-    MAPPER.readValue[DynamicConfigProvider[String]](
-      passwordProviderSer, new TypeReference[DynamicConfigProvider[String]] {}
-    ).getConfig.getOrDefault("password", "")
+    MAPPER.readValue[PasswordProvider](
+      passwordProviderSer, new TypeReference[PasswordProvider] {}
+    ).getPassword
   }
 
   private lazy val connectorConfig: MetadataStorageConnectorConfig =

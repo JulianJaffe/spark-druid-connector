@@ -194,7 +194,7 @@ object SegmentReaderRegistry extends Logging {
             throw new ISE(e, "Unable to form simple file uri")
         }
       case "hdfs" => URI.create(loadSpec.get("path").toString)
-      case GoogleStorageDruidModule.SCHEME =>
+      case "google" =>
         // Segment names contain : in their path.
         // Google Cloud Storage supports : but Hadoop does not.
         // This becomes an issue when re-indexing using the current segments.
@@ -243,7 +243,7 @@ object SegmentReaderRegistry extends Logging {
         MAPPER.setInjectableValues(injectableValues)
         MAPPER.registerSubtypes(new NamedType(classOf[HdfsLoadSpec], "hdfs"))
       }),
-      GoogleStorageDruidModule.SCHEME -> (_ => {
+      "google" -> (_ => {
         val googleStorage = DeepStorageConstructorHelpers.createGoogleStorage()
         val puller = new GoogleDataSegmentPuller(googleStorage)
         val injectableValues = baseInjectableValues

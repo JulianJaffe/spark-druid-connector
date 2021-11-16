@@ -19,8 +19,8 @@ import com.fasterxml.jackson.databind.introspect.AnnotatedClassResolver
 import com.julianjaffe.spark_druid_connector.mixins.Logging
 import com.julianjaffe.spark_druid_connector.MAPPER
 import org.apache.druid.java.util.common.IAE
-import org.apache.druid.timeline.partition.{HashBasedNumberedShardSpec, HashPartitionFunction,
-  LinearShardSpec, NumberedShardSpec, ShardSpec, SingleDimensionShardSpec}
+import org.apache.druid.timeline.partition.{HashBasedNumberedShardSpec, LinearShardSpec,
+  NumberedShardSpec, ShardSpec, SingleDimensionShardSpec}
 
 import scala.collection.JavaConverters.{collectionAsScalaIterableConverter, seqAsJavaListConverter}
 import scala.collection.mutable
@@ -131,8 +131,6 @@ object ShardSpecRegistry extends Logging {
           properties.get("bucketId").map(Integer.decode).orNull,
           properties.get("numBuckets").map(Integer.decode).orNull,
           properties.get("partitionDimensions").map(_.split(",").toList.asJava).orNull,
-          properties.get("hashPartitionFunction").map(HashPartitionFunction.fromString)
-            .getOrElse(HashPartitionFunction.MURMUR3_32_ABS),
           MAPPER),
         (baseSpec: ShardSpec, partitionNum: Int, numPartitions: Int) => {
           val spec = baseSpec.asInstanceOf[HashBasedNumberedShardSpec]
@@ -142,7 +140,6 @@ object ShardSpecRegistry extends Logging {
             spec.getBucketId,
             spec.getNumBuckets,
             spec.getPartitionDimensions,
-            spec.getPartitionFunction,
             MAPPER
           )
         }

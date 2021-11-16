@@ -15,10 +15,11 @@
 
 package com.julianjaffe.spark_druid_connector.partitioners
 
+import com.google.common.hash.Hashing
 import com.julianjaffe.spark_druid_connector.partitioners.HashBasedNumberedPartitioner.generatePartitionMap
 import com.julianjaffe.spark_druid_connector.MAPPER
 import org.apache.druid.java.util.common.ISE
-import org.apache.druid.timeline.partition.{HashBasedNumberedShardSpec, HashPartitionFunction}
+import org.apache.druid.timeline.partition.HashBasedNumberedShardSpec
 import org.apache.spark.TaskContext
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.{DataFrame, Row}
@@ -30,6 +31,7 @@ import scala.collection.JavaConverters.seqAsJavaListConverter
 
 class HashBasedNumberedPartitioner(df: DataFrame) extends PartitionMapProvider with Serializable {
   private var partitionMap = Map[Int, Map[String, String]]()
+  private val HashFunction = Hashing.murmur3_32()
 
   def partition(
                  tsCol: String,
@@ -37,8 +39,7 @@ class HashBasedNumberedPartitioner(df: DataFrame) extends PartitionMapProvider w
                  segmentGranularity: String,
                  rowsPerPartition: Long,
                  partitionColsOpt: Option[Seq[String]],
-                 shouldRollUp: Boolean = true,
-                 hashFunc: HashPartitionFunction = HashPartitionFunction.MURMUR3_32_ABS
+                 shouldRollUp: Boolean = true
                ): DataFrame = {
     // If partition dimensions are not provided, assume all columns except __time are dimensions
     val partitionColumns = partitionColsOpt.getOrElse(df.schema.fieldNames.toSeq.filterNot(_ == tsCol))
@@ -63,15 +64,14 @@ class HashBasedNumberedPartitioner(df: DataFrame) extends PartitionMapProvider w
 
     val schemaWithHashKey = bucketedDf.schema.add(_partitionKeyCol, IntegerType, nullable = false)
     val bucketedDfWithKeys = bucketedDf.map({ row: Row =>
-      val groupKey =
-        HashBasedNumberedShardSpec.serializeGroupKey(MAPPER, row.getValuesMap(partitionColumns).values.toSeq.asJava)
-      val hashKey = hashFunc.hash(groupKey, row.getInt(row.fieldIndex(_partitionNumCol)))
+      val groupKey = MAPPER.writeValueAsBytes(row.getValuesMap(partitionColumns).values.toSeq.asJava)
+      val hashKey = Math.abs(HashFunction.hashBytes(groupKey).asInt() % row.getInt(row.fieldIndex(_partitionNumCol)))
 
       Row.fromSeq(row.toSeq :+ hashKey)
     }, RowEncoder(schemaWithHashKey))
 
     val partitionedDf = bucketedDfWithKeys.repartition(col(_timeBucketCol), col(_partitionKeyCol))
-    partitionMap = generatePartitionMap(partitionedDf, partitionColsString, hashFunc.toString)
+    partitionMap = generatePartitionMap(partitionedDf, partitionColsString)
     partitionedDf.drop(_timeBucketCol, _rankCol, _partitionNumCol, _partitionKeyCol)
   }
 
@@ -86,8 +86,7 @@ class HashBasedNumberedPartitioner(df: DataFrame) extends PartitionMapProvider w
 object HashBasedNumberedPartitioner {
   def generatePartitionMap(
                             partitionedDf: DataFrame,
-                            partitionCols: Option[String],
-                            hashFuncStr: String = HashPartitionFunction.MURMUR3_32_ABS.toString
+                            partitionCols: Option[String]
                           ): Map[Int, Map[String, String]] = {
     val bucketMapping = partitionedDf.rdd.mapPartitions { rowIterator =>
       if (rowIterator.hasNext) {
@@ -113,8 +112,7 @@ object HashBasedNumberedPartitioner {
           "partitionId" -> index.toString,
           "numPartitions" -> numPopulatedPartitions,
           "bucketId" -> partition.druidPartition.toString,
-          "numBuckets" -> partition.numPartitions.toString,
-          "hashPartitionFunction" -> hashFuncStr
+          "numBuckets" -> partition.numPartitions.toString
         ) ++ partitionColsMap)
       }
     }.toMap
